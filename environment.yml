@@ -1,0 +1,11 @@
+name: reach-net
+channels:
+  - defaults
+dependencies:
+  - python=3.8
+  - numpy
+  - matplotlib
+  - jupyter 
+  - notebook
+  - scipy
+
