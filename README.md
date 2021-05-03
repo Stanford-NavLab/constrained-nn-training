@@ -11,5 +11,5 @@ Neural network approach for generating zonotope reachable sets
 ### Jupyter notebooks in VSCode
 1. Open new anaconda promp and activate environment
 2. Run `code` to open VSCode 
-3. In bottom left corner of VSCode, select interpreter 'reach-net'
-4. In upper right corner of VSCode, select kernel 'reach-net'
+3. In bottom left corner of VSCode, select interpreter `'reach-net': conda`
+4. In upper right corner of VSCode, select kernel `'reach-net': conda`
