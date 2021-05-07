@@ -137,7 +137,14 @@ class Zonotope(object):
             
 
     ### Plotting
-    def plot(self, ax = None, color='b', alpha=0.5):
+    def plot(self, ax=None, color='b', alpha=0.5):
+        """ Plot function 
+        
+        Args (all optional):
+            ax: axes to plot on, if unspecified, will generate and plot on new set of axes
+            color: color 
+            alpha: patch transparency (from 0 to 1)
+        """
         V = self.vertices()
         xmin = np.min(V[0,:]); xmax = np.max(V[0,:])
         ymin = np.min(V[1,:]); ymax = np.max(V[1,:])
