@@ -137,15 +137,22 @@ class Zonotope(object):
             
 
     ### Plotting
-    def plot(self, color='b', alpha=0.5):
+    def plot(self, ax = None, color='b', alpha=0.5):
         V = self.vertices()
         xmin = np.min(V[0,:]); xmax = np.max(V[0,:])
         ymin = np.min(V[1,:]); ymax = np.max(V[1,:])
 
-        fig, ax = plt.subplots()
+        if ax == None:
+            fig, ax = plt.subplots()
         poly = Polygon(V.T, True, color=color, alpha=alpha)
-        p = PatchCollection([poly], match_original=True)
-        ax.add_collection(p)
+        ax.add_patch(poly)
+        # p = PatchCollection([poly], match_original=True)
+        # ax.add_collection(p)
 
-        ax.set(xlim=(xmin, xmax), ylim=(ymin, ymax))
-        plt.show()
+        # recompute the ax.dataLim
+        ax.relim()
+        # update ax.viewLim using the new dataLim
+        ax.autoscale_view()
+
+        # if ax == None:
+        #     ax.set(xlim=(xmin, xmax), ylim=(ymin, ymax))
