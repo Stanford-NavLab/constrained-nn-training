@@ -1,5 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
+from matplotlib.patches import Polygon
+from matplotlib.collections import PatchCollection
 
 class Zonotope(object):
     """ Zonotope
@@ -63,12 +66,13 @@ class Zonotope(object):
         """ Vertices of zonotope 
         
             Adapted from CORA \@zonotope\vertices.m and \@zonotope\polygon.m
-            Tested on 2D zonotopes
+            Tested on 2D zonotopes (n==2)
         """
         # extract variables
         c = self.c
         G = self.G
         n = self.dim
+        m = self.order
 
         if n == 1:
             # compute the two vertices for 1-dimensional case
@@ -78,33 +82,41 @@ class Zonotope(object):
             # obtain size of enclosing intervalhull of first two dimensions
             xmax = np.sum(np.abs(G[0,:]))
             ymax = np.sum(np.abs(G[1,:]))
+            #print('xmax: ', xmax, 'ymax: ', ymax)
 
             # Z with normalized direction: all generators pointing "up"
             Gnorm = G
             Gnorm[:,G[1,:]<0] = Gnorm[:,G[1,:]<0] * -1
+            #print('Gnorm:\n', Gnorm)
 
             # compute angles
             angles = np.arctan2(G[1,:],G[0,:])
             angles[angles<0] = angles[angles<0] + 2 * np.pi
+            #print('angles: ', angles)
 
             # sort all generators by their angle
             IX = np.argsort(angles)
+            #print('IX: ', IX)
 
             # cumsum the generators in order of angle
-            V = np.zeros((2,n+1))
-            for i in range(n):
+            V = np.zeros((2,m+1))
+            for i in range(m):
                 V[:,i+1] = V[:,i] + 2 * Gnorm[:,IX[i]] 
+            #print('V step 1:\n', V)
 
             V[0,:] = V[0,:] + xmax - np.max(V[0,:])
             V[1,:] = V[1,:] - ymax 
+            #print('V step 2:\n', V)
 
             # flip/mirror upper half to get lower half of zonotope (point symmetry)
-            V = np.block([[V[0,:], V[0,-1] + V[0,0] - V[0,1:-1]],
-                          [V[1,:], V[1,-1] + V[1,0] - V[1,1:-1]]])
-            
+            V = np.block([[V[0,:], V[0,-1] + V[0,0] - V[0,1:]],
+                          [V[1,:], V[1,-1] + V[1,0] - V[1,1:]]])
+            #print('V step 3:\n', V)
+
             # consider center
             V[0,:] = c[0] + V[0,:]
             V[1,:] = c[1] + V[1,:]
+            #print('V step 4:\n', V)
         else:
             #TODO: delete aligned and all-zero generators
 
@@ -125,5 +137,15 @@ class Zonotope(object):
             
 
     ### Plotting
-    def plot(self):
-        pass
+    def plot(self, color='b', alpha=0.5):
+        V = self.vertices()
+        xmin = np.min(V[0,:]); xmax = np.max(V[0,:])
+        ymin = np.min(V[1,:]); ymax = np.max(V[1,:])
+
+        fig, ax = plt.subplots()
+        poly = Polygon(V.T, True, color=color, alpha=alpha)
+        p = PatchCollection([poly], match_original=True)
+        ax.add_collection(p)
+
+        ax.set(xlim=(xmin, xmax), ylim=(ymin, ymax))
+        plt.show()
