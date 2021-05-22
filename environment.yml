@@ -8,6 +8,6 @@ dependencies:
   - jupyter 
   - notebook
   - scipy
-  - cvxpy
-  - cvxpylayers
+  # - cvxpy
+  # - cvxpylayers
 
