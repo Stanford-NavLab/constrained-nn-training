@@ -133,7 +133,7 @@ class ConstrainedZonotope(object):
             V = Zt @ Neq.T + x0.T
             V = c + G @ V.T
             return V
-        return np.empty()
+        return np.array([[]])
 
 
     ### Plotting
@@ -155,7 +155,7 @@ class ConstrainedZonotope(object):
             fig, ax = plt.subplots()
         if V.shape[1] == 1:
             plt.plot(V[1][0], V[0][0], '.', color=color, alpha=alpha)
-        else:
+        elif V.shape[1] >= 1:
             poly = Polygon(V.T, True, color=color, alpha=alpha)
             ax.add_patch(poly)
         # p = PatchCollection([poly], match_original=True)
