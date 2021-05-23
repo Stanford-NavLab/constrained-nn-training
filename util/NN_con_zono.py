@@ -2,6 +2,41 @@ import numpy as np
 import torch
 from util.zonotope import Zonotope
 from util.constrained_zonotope import ConstrainedZonotope
+import cvxpy as cvx
+
+
+def emptiness_check(f_cost, A_ineq, b_ineq, A_eq, b_eq):
+    x_cvx = cvx.Variable((f_cost.shape[0], 1))
+    cost = np.transpose(f_cost) @ x_cvx
+    constraints = [A_ineq @ x_cvx <= b_ineq, A_eq @ x_cvx == b_eq]
+    problem = cvx.Problem(cvx.Minimize(cost), constraints)
+    problem.solve()
+    x = x_cvx.value
+    return x[-1]
+
+
+def make_con_zono_empty_check_LP(A, b):
+    """
+    Given the constraint matrices A and b for a constrained zonotope, return the data matrices required to construct a
+    linear program to solve for emptiness check of the constrained zonotope.
+    """
+    # Dimension of problem
+    d = A.shape[1]
+
+    # Cost
+    f_cost = np.zeros((d, 1))
+    f_cost = np.concatenate((f_cost, np.eye(1)), axis=0)
+
+    # Inequality cons
+    A_ineq = np.concatenate((-np.eye(d), -np.ones((d, 1))), axis=1)
+    A_ineq = np.concatenate((A_ineq, np.concatenate((np.eye(d), -np.ones((d, 1))), axis=1)), axis=0)
+    b_ineq = np.zeros((2 * d, 1))
+
+    # Equality cons
+    A_eq = np.concatenate((A, np.zeros((A.shape[0], 1))), axis=1)
+    b_eq = b
+
+    return f_cost, A_ineq, b_ineq, A_eq, b_eq
 
 
 def hpint_perm(n):
@@ -78,7 +113,10 @@ def ReLU_con_zono_single(Z_in):
             A_i = np.concatenate((np.concatenate((A, np.zeros((n_con, n))), axis=1), A_i), axis=0)
 
         # Create output zonotope
-        Z_out.append(ConstrainedZonotope(c_i, G_i, A_i, b_i))
+        f_cost, A_ineq, b_ineq, A_eq, b_eq = make_con_zono_empty_check_LP(A_i, b_i)
+        test_value = emptiness_check(f_cost, A_ineq, b_ineq, A_eq, b_eq)
+        if test_value <= 1:
+            Z_out.append(ConstrainedZonotope(c_i, G_i, A_i, b_i))
 
     return Z_out
 
