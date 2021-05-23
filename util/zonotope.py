@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.patches import Polygon
@@ -123,7 +124,7 @@ class Zonotope(object):
             # check if zonotope is full-dimensional
             if self.order < n:
                 #TODO: verticesIterateSVG
-                print("Vertices fro non full-dimensional zonotope not implemented yet - returning empty array")
+                print("Vertices for non full-dimensional zonotope not implemented yet - returning empty array")
                 V = np.empty()
                 return V
             
@@ -163,3 +164,64 @@ class Zonotope(object):
 
         # if ax == None:
         #     ax.set(xlim=(xmin, xmax), ylim=(ymin, ymax))
+
+
+#### ----------------------------------------------------------------------------
+
+
+class TorchZonotope(object):
+    """ TorchZonotope
+
+    Example usage:
+        z = TorchZonotope(torch.zeros(2,1),torch.eye(2))
+    """
+    __array_priority__ = 1000 # prioritize class mul over numpy array mul
+
+    ### Constructors
+    def __init__(self, center, generators):
+        """ Constructor
+
+        Args:
+            center: torch tensor
+            generators: torch tensor
+        """
+        self.c = center 
+        self.G = generators
+        self.Z = torch.hstack((center, generators))
+        self.dim = center.shape[0]
+        self.order = generators.shape[1]
+
+    ### Printing
+    def __str__(self):
+        return "center:\n {0} \n generators:\n {1}".format(self.c, self.G)
+
+    ### Operations
+    def __add__(self, other):
+        """ Minkowski addition (overloads '+') """
+        c = self.c + other.c
+        G = torch.hstack((self.G, other.G))
+        return TorchZonotope(c,G)
+
+    def __rmul__(self, other):
+        """ Right linear map (overloads '*') """
+        # other is a scalar
+        if np.isscalar(other):
+            c = other * self.c
+            G = other * self.G 
+        # other is a matrix
+        elif type(other) is torch.Tensor:
+            c = other @ self.c
+            G = other @ self.G 
+        return TorchZonotope(c,G) 
+    
+    def __mul__(self, other):
+        """ (Left) linear map (overloads '*') """
+        # other is a scalar
+        if np.isscalar(other):
+            c = other * self.c
+            G = other * self.G 
+        # other is a matrix
+        elif type(other) is torch.Tensor:
+            c = self.c @ other
+            G = self.G @ other
+        return TorchZonotope(c,G) 
