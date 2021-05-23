@@ -110,7 +110,7 @@ class ConstrainedZonotope(object):
         Vertices of a constrained zonotope
         Adapted from CORA lcon2vert.m
         Tested for 2-D and conzonos with only one vertex
-        TODO: Implement cases for 1-D and 3-D. Test the function on empty conzonos
+        TODO: Implement cases for 1-D and 3-D.
         """
         c = self.c
         G = self.G
