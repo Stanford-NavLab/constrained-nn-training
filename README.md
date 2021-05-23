@@ -14,5 +14,4 @@ Neural network approach for generating zonotope reachable sets
 1. Open new anaconda prompt and activate environment
 2. Run `code` to open VSCode 
 3. In bottom left corner of VSCode, select interpreter `'reach-net': conda`
-4. In upper right corner of VSCode, select kernel `'reach-net': conda`
-  a. May need to go to Preferences > Search "path" and select "python" and add path to anaconda envs to "Venv Path"
+4. In upper right corner of VSCode, select kernel `'reach-net': conda` (May need to go to Preferences > Search "path" and select "python" and add path to anaconda envs to "Venv Path")
