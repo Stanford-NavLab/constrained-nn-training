@@ -146,10 +146,6 @@ class ConstrainedZonotope(object):
             alpha: patch transparency (from 0 to 1)
         """
         V = self.vertices()
-        xmin = np.min(V[0, :]);
-        xmax = np.max(V[0, :])
-        ymin = np.min(V[1, :]);
-        ymax = np.max(V[1, :])
 
         if ax == None:
             fig, ax = plt.subplots()
