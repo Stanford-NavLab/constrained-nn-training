@@ -111,7 +111,7 @@ class ConstrainedZonotope(object):
         A = self.A
         b = self.b
         if type(A) != np.ndarray:
-            return Zonotope(A, b).vertices()
+            return Zonotope(c, G).vertices()
         n_G = G.shape[1]
         A_ineq = np.concatenate((np.eye(n_G), -np.eye(n_G)), axis=0)
         b_ineq = np.ones((2 * n_G, 1))
@@ -177,28 +177,26 @@ class TorchConstrainedZonotope(object):
         """
         self.c = center 
         self.G = generators
-        self.A = constraint_A
-        self.b = constraint_b
         self.dim = center.shape[0]
         self.order = generators.shape[1]
+        if constraint_A is None:
+            self.A = torch.zeros(0,self.order)
+            self.b = torch.zeros(0,1)
+        else:
+            self.A = constraint_A
+            self.b = constraint_b
+        
 
     def __str__(self):
         ind = '\t'
-        c_str = ind + str(self.c).replace('\n','\n' + ind)
-        G_str = ind + str(self.G).replace('\n','\n' + ind)
-        if self.A is not None:
-            A_str = ind + str(self.A).replace('\n','\n' + ind)
-        else:
-            A_str = ind + str(self.A)
-        if self.b is not None:
-            b_str = ind + str(self.b).replace('\n','\n' + ind)
-        else:
-            b_str = ind + str(self.b)
+        c_str = ind + str(self.c.data).replace('\n','\n' + ind)
+        G_str = ind + str(self.G.data).replace('\n','\n' + ind)
+        A_str = ind + str(self.A.data).replace('\n','\n' + ind)
+        b_str = ind + str(self.b.data).replace('\n','\n' + ind)
+        
         print_str = 'center:\n' + c_str + '\ngenerators:\n' + G_str + \
                     '\nconstraint A:\n' + A_str + '\nconstraint b:\n' + b_str
         return print_str
-        # return "center:\n {0} \ngenerators:\n {1} \nconstraint A:\n {2} \
-        #     \nconstraint b:\n {3}".format(self.c, self.G, self.A, self.b)
 
     ### Operations
     def __add__(self, other):
@@ -238,18 +236,22 @@ class TorchConstrainedZonotope(object):
         c = self.c
         G = torch.hstack((self.G, torch.zeros(self.dim, other.order)))
         # no constraints case
-        if self.A is None and other.A is None:
-            A = torch.hstack((self.G, -other.G))
-            b = other.c - self.c
-        else:
-            q1 = self.A.shape[0]; q2 = other.A.shape[0] 
-            A1 = torch.hstack((self.A, torch.zeros(q1, other.order)))
-            A2 = torch.hstack((torch.zeros(q2, self.order), other.A))
-            A3 = torch.hstack((self.G, -other.G))
-            A = torch.vstack((A1, A2, A3))
-            b = torch.vstack((self.b, other.b, other.c - self.c))
+        # if self.A is None and other.A is None:
+        #     A = torch.hstack((self.G, -other.G))
+        #     b = other.c - self.c
+        # else:
+        q1 = self.A.shape[0]; q2 = other.A.shape[0] 
+        A1 = torch.hstack((self.A, torch.zeros(q1, other.order)))
+        A2 = torch.hstack((torch.zeros(q2, self.order), other.A))
+        A3 = torch.hstack((self.G, -other.G))
+        A = torch.vstack((A1, A2, A3))
+        b = torch.vstack((self.b, other.b, other.c - self.c))
         return TorchConstrainedZonotope(c,G,A,b) 
 
-    def to_np(self):
-        """ Return normal (numpy) ConstrainedZonotope """
-        return ConstrainedZonotope(self.c.detach().numpy(), self.G.detach().numpy(), self.A.detach().numpy(), self.b.detach().numpy())
+    def plot(self, ax=None, color='b', alpha=0.5):
+        """ Plot """
+        if self.A.shape[0] > 0:
+            cz = ConstrainedZonotope(self.c.detach().numpy(), self.G.detach().numpy(), self.A.detach().numpy(), self.b.detach().numpy())
+        else:
+            cz = ConstrainedZonotope(self.c.detach().numpy(), self.G.detach().numpy())
+        cz.plot(ax, color, alpha)
