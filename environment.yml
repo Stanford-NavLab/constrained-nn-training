@@ -8,6 +8,7 @@ dependencies:
   - jupyter 
   - notebook
   - scipy
+  - pypoman
   # - cvxpy
   # - cvxpylayers
 

@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from util.zonotope import Zonotope
-from util.constrained_zonotope import ConstrainedZonotope
+from util.constrained_zonotope import ConstrainedZonotope, TorchConstrainedZonotope
 import cvxpy as cvx
 
 
@@ -210,7 +210,41 @@ def forward_pass_NN_con_zono(Z_in, NN_weights, NN_biases):
 
     return Z_out
 
-#### PYTORCH VERSION ####
+#### ------------------ PYTORCH VERSION ------------------ ####
+
+# def emptiness_check(f_cost, A_ineq, b_ineq, A_eq, b_eq):
+#     x_cvx = cvx.Variable((f_cost.shape[0], 1))
+#     cost = np.transpose(f_cost) @ x_cvx
+#     constraints = [A_ineq @ x_cvx <= b_ineq, A_eq @ x_cvx == b_eq]
+#     problem = cvx.Problem(cvx.Minimize(cost), constraints)
+#     problem.solve()
+#     x = x_cvx.value
+#     return x[-1]
+
+
+# def make_con_zono_empty_check_LP(A, b):
+#     """
+#     Given the constraint matrices A and b for a constrained zonotope, return the data matrices required to construct a
+#     linear program to solve for emptiness check of the constrained zonotope.
+#     """
+#     # Dimension of problem
+#     d = A.shape[1]
+
+#     # Cost
+#     f_cost = torch.zeros(d, 1)
+#     f_cost = torch.cat((f_cost, np.eye(1)), dim=0)
+
+#     # Inequality cons
+#     A_ineq = torch.cat((-torch.eye(d), -torch.ones(d, 1)), dim=1)
+#     A_ineq = torch.cat((A_ineq, torch.cat((torch.eye(d), -torch.ones(d, 1)), dim=1)), dim=0)
+#     b_ineq = torch.zeros(2 * d, 1)
+
+#     # Equality cons
+#     A_eq = torch.cat((A, torch.zeros(A.shape[0], 1)), dim=1)
+#     b_eq = b
+
+#     return f_cost, A_ineq, b_ineq, A_eq, b_eq
+
 
 def hpint_perm_torch(n):
     """
@@ -226,21 +260,21 @@ def hpint_perm_torch(n):
         for j in range(len(binStr)):
             c_new_i[n - 1 - j][0] = int(binStr[len(binStr) - 1 - j])
         c_new.append(c_new_i)
-        D_new_i = torch.diag(torch.transpose(c_new_i)[0])
+        D_new_i = torch.diag(c_new_i.T[0])
         D_new.append(D_new_i)
-        H_new_i = torch.diag(torch.transpose(c_new_i * (-2) + 1)[0])
+        H_new_i = torch.diag((c_new_i * (-2) + 1).T[0])
         H_new.append(H_new_i)
 
     return c_new, D_new, H_new
 
 
-def ReLU_con_zono_single(Z_in):
+def ReLU_con_zono_single_torch(Z_in):
     """
     INPUT:
     Z_in: A single constrained zonotope of class TorchConstrainedZonotope from constrained_zonotope.py.
 
     OUTPUT:
-    Z_out: A list of constrained zonotopes of class ConstrainedZonotope from constrained_zonotope.py as a result of
+    Z_out: A list of constrained zonotopes of class TorchConstrainedZonotope from constrained_zonotope.py as a result of
     ReLU-activating Z_in.
     """
     # SETUP
@@ -253,7 +287,7 @@ def ReLU_con_zono_single(Z_in):
     # Get dimension of things
     n = c.shape[0]
     n_gen = G.shape[1]
-    if type(A) == np.ndarray:
+    if type(A) == torch.Tensor:
         n_con = A.shape[0]
     else:
         n_con = 0
@@ -263,40 +297,43 @@ def ReLU_con_zono_single(Z_in):
     Z_out = []
 
     # CREATE THE ZONOTOPES
-    c_new, D_new, H_new = hpint_perm(n)
+    c_new, D_new, H_new = hpint_perm_torch(n)
 
     for i in range(n_out_max):
         # Get new center and generator matrices
         c_i = D_new[i] @ c
         G_i = D_new[i] @ G
-        G_i = np.concatenate((G_i, np.zeros((n, n))), axis=1)
+        G_i = torch.cat((G_i, torch.zeros(n, n)), dim=1)
 
         # Get new constraint arrays
         HG = H_new[i] @ G
-        d_i = np.absolute(HG) @ np.ones((n_gen, 1))
+        d_i = torch.abs(HG) @ torch.ones(n_gen, 1)
         Hc = H_new[i] @ c
         d_i = 0.5 * (d_i - Hc)
 
         b_i = -Hc - d_i
-        if type(b) == np.ndarray:
-            b_i = np.concatenate((b, b_i), axis=0)
+        if type(b) == torch.Tensor:
+            b_i = torch.cat((b, b_i), dim=0)
 
-        A_i = np.concatenate((HG, np.diag(np.transpose(d_i)[0])), axis=1)
+        A_i = torch.cat((HG, torch.diag(d_i.T[0])), dim=1)
         if n_con > 0:
-            A_i = np.concatenate((np.concatenate((A, np.zeros((n_con, n))), axis=1), A_i), axis=0)
+            A_i = torch.cat((torch.cat((A, torch.zeros(n_con, n)), dim=1), A_i), dim=0)
 
         # Create output zonotope
-        Z_out.append(ConstrainedZonotope(c_i, G_i, A_i, b_i))
+        f_cost, A_ineq, b_ineq, A_eq, b_eq = make_con_zono_empty_check_LP(A_i.detach().numpy(), b_i.detach().numpy())
+        test_value = emptiness_check(f_cost, A_ineq, b_ineq, A_eq, b_eq)
+        if test_value <= 1:
+            Z_out.append(TorchConstrainedZonotope(c_i, G_i, A_i, b_i))
 
     return Z_out
 
-def ReLU_con_zono(Z_in):
+def ReLU_con_zono_torch(Z_in):
     """
     INPUT:
-    Z_in: A list of constrained zonotopes of class ConstrainedZonotope from constrained_zonotope.py.
+    Z_in: A list of constrained zonotopes of class TorchConstrainedZonotope from constrained_zonotope.py.
 
     OUTPUT:
-    Z_out: A list of constrained zonotopes of class ConstrainedZonotope from constrained_zonotope.py as a result of
+    Z_out: A list of constrained zonotopes of class TorchConstrainedZonotope from constrained_zonotope.py as a result of
     ReLU-activating each element in Z_in.
     """
     # Get the number of input zonotopes
@@ -307,14 +344,14 @@ def ReLU_con_zono(Z_in):
 
     for i in range(n_in):
         Z_i = Z_in[i]
-        Z_out_i = ReLU_con_zono_single(Z_i)
+        Z_out_i = ReLU_con_zono_single_torch(Z_i)
         for j in range(len(Z_out_i)):
             Z_out.append(Z_out_i[j])
 
     return Z_out
 
 
-def linear_layer_con_zono(Z_in, W, b):
+def linear_layer_con_zono_torch(Z_in, W, b):
     """
     INPUTS:
     Z_in: A list of constrained zonotopes of class ConstrainedZonotope from constrained_zonotope.py.
@@ -344,7 +381,7 @@ def linear_layer_con_zono(Z_in, W, b):
         G = W @ G
 
         # Update the output
-        Z_out.append(ConstrainedZonotope(c, G, Z.A, Z.b))
+        Z_out.append(TorchConstrainedZonotope(c, G, Z.A, Z.b))
 
     return Z_out
 
@@ -365,17 +402,17 @@ def forward_pass_NN_con_zono_torch(Z_in, NN_weights, NN_biases):
     n_depth = len(NN_weights)
 
     # Convert input zonotope into a constrained zonotope
-    Z_in = ConstrainedZonotope(Z_in.c, Z_in.G)
+    Z_in = TorchConstrainedZonotope(Z_in.c, Z_in.G)
 
     # Run through layers and perform ReLU activations
     Z_out = [Z_in]
     for i in range(n_depth - 1):
         W = NN_weights[i]
         b = NN_biases[i]
-        Z_out = linear_layer_con_zono(Z_out, W, b)
-        Z_out = ReLU_con_zono(Z_out)
+        Z_out = linear_layer_con_zono_torch(Z_out, W, b)
+        Z_out = ReLU_con_zono_torch(Z_out)
 
     # Evaluate final layer
-    Z_out = linear_layer_con_zono(Z_out, NN_weights[-1], NN_biases[-1])
+    Z_out = linear_layer_con_zono_torch(Z_out, NN_weights[-1], NN_biases[-1])
 
     return Z_out
