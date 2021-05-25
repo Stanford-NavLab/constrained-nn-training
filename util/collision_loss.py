@@ -3,7 +3,7 @@ import torch
 import cvxpy as cp
 from cvxpylayers.torch import CvxpyLayer
 
-from .NN_con_zono import forward_pass_NN_con_zono_torch
+from .NN_con_zono import forward_pass_NN_torch
 
 def center_param_collision_check(c_out_tch, G_out, obstacle):
     """ Center-parameterized Collision Check 
@@ -105,23 +105,27 @@ def torch_collision_check(Z_out, Z_obs):
     return v_opt
 
 
-def NN_constraint_loss(Z_in, Z_out_con, net):
-    # extract weights and biases from network
-    NN_weights = []
-    NN_biases = []
+def NN_constraint_step(Z_in, Z_obs, net, con_opt):
+    """ NN Constraint Step
 
-    idx = 0
-    for param in net.parameters():
-        if idx % 2 == 0: # "even" parameters are weights
-            NN_weights.append(param)
-        else: # "odd" parameters are biases
-            NN_biases.append(param[:,None])
-        idx += 1
-    
-    Z_out = forward_pass_NN_con_zono_torch(Z_in, NN_weights, NN_biases)
+    Compute the forward pass of an input zonotope thru a network, then evaluate the 
+    collision check for all of the output zonotopes, determine which are in collision,
+    then run gradients updates for those.
+
+    Args:
+        Z_in: TorchZonotope or TorchConstrainedZonotope object
+        Z_out_con: TorchZonotope or TorchConstrainedZonotope object
+        net: torch network (nn.Module)
+        con_opt: torch optimizer
+    """
+    Z_out = forward_pass_NN_torch(Z_in, net)
 
     for z in Z_out:
-        v = torch_collision_check(z, Z_out_con)
+        v = torch_collision_check(z, Z_obs)
         if v <= 1: # in collision
-            v.backward() # backprop
+            con_opt.zero_grad()
+            loss = torch.square(1 - v)
+            loss.backward() # backprop
+            con_opt.step()
+
 

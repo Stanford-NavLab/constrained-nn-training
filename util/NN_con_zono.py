@@ -416,3 +416,45 @@ def forward_pass_NN_con_zono_torch(Z_in, NN_weights, NN_biases):
     Z_out = linear_layer_con_zono_torch(Z_out, NN_weights[-1], NN_biases[-1])
 
     return Z_out
+
+
+def forward_pass_NN_torch(Z_in, net):
+    """
+    INPUTS:
+    Z_in: A single zonotope of class Zonotope from zonotope.py.
+    net: torch network
+
+    OUTPUT:
+    Z_out: A list of constrained zonotopes of class ConstrainedZonotope from constrained_zonotope.py as a result of
+    passing Z_in through a neural network defined by NN_weights and NN_biases
+    """
+    # extract weights and biases from network
+    NN_weights = []
+    NN_biases = []
+
+    idx = 0
+    for param in net.parameters():
+        if idx % 2 == 0: # "even" parameters are weights
+            NN_weights.append(param)
+        else: # "odd" parameters are biases
+            NN_biases.append(param[:,None])
+        idx += 1
+
+    # Get depth of neural network
+    n_depth = len(NN_weights)
+
+    # Convert input zonotope into a constrained zonotope
+    Z_in = TorchConstrainedZonotope(Z_in.c, Z_in.G)
+
+    # Run through layers and perform ReLU activations
+    Z_out = [Z_in]
+    for i in range(n_depth - 1):
+        W = NN_weights[i]
+        b = NN_biases[i]
+        Z_out = linear_layer_con_zono_torch(Z_out, W, b)
+        Z_out = ReLU_con_zono_torch(Z_out)
+
+    # Evaluate final layer
+    Z_out = linear_layer_con_zono_torch(Z_out, NN_weights[-1], NN_biases[-1])
+
+    return Z_out
