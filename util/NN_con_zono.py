@@ -372,13 +372,9 @@ def linear_layer_con_zono_torch(Z_in, W, b):
         # Get the current zonotope
         Z = Z_in[i]
 
-        # Get the zonotope's parameters
-        c = Z.c
-        G = Z.G
-
-        # Do the linear transformation
-        c = W @ c + b
-        G = W @ G
+        # Apply the linear transformation
+        c = W.clone() @ Z.c + b
+        G = W.clone() @ Z.G
 
         # Update the output
         Z_out.append(TorchConstrainedZonotope(c, G, Z.A, Z.b))

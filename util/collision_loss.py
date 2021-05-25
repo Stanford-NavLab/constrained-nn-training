@@ -118,14 +118,36 @@ def NN_constraint_step(Z_in, Z_obs, net, con_opt):
         net: torch network (nn.Module)
         con_opt: torch optimizer
     """
+    con_opt.zero_grad()
+
     Z_out = forward_pass_NN_torch(Z_in, net)
+
+    losses = []
 
     for z in Z_out:
         v = torch_collision_check(z, Z_obs)
         if v <= 1: # in collision
-            con_opt.zero_grad()
+            print("in collision")
             loss = torch.square(1 - v)
-            loss.backward() # backprop
-            con_opt.step()
+            losses.append(loss)
+
+    if losses:
+        total_loss = sum(losses)          
+        total_loss.backward() # backprop
+        con_opt.step()
+
+    # v1 = torch_collision_check(Z_out[0], Z_obs)
+    # print("in collision")
+    # con_opt.zero_grad()
+    # loss1 = torch.square(1 - v1)
+    # loss1.backward(retain_graph=True) # backprop
+    # con_opt.step()
+
+    # v2 = torch_collision_check(Z_out[1], Z_obs)
+    # print("in collision")
+    # con_opt.zero_grad()
+    # loss2 = torch.square(1 - v2)
+    # loss2.backward(retain_graph=True) # backprop
+    # con_opt.step()
 
 

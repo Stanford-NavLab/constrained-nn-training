@@ -119,7 +119,10 @@ class ConstrainedZonotope(object):
         x0 = np.linalg.pinv(A) @ b
         AAA = A_ineq @ Neq
         bbb = b_ineq - A_ineq @ x0
-        vertices = pypoman.compute_polytope_vertices(AAA, bbb)
+        try:
+            vertices = pypoman.compute_polytope_vertices(AAA, bbb)
+        except:
+            print("error plotting: ",AAA, bbb)
         if len(vertices) > 0:
             Zt = np.array([vertices[0]])
             for i in range(1, len(vertices)):
