@@ -129,7 +129,26 @@ class ConstrainedZonotope(object):
                 Zt = np.concatenate((Zt, np.array([vertices[i]])), axis=0)
             V = Zt @ Neq.T + x0.T
             V = c + G @ V.T
-            return V
+            print(V)
+
+            # Rearrange points in V in CCW order
+            Px = V[0]
+            Py = V[1]
+            cx = np.mean(Px)
+            cy = np.mean(Py)
+            ang = np.arctan2(Py - cy, Px - cx)
+            dst = np.zeros(Px.shape)
+            dtype = [('angle', float), ('distance', float), ('index', int)]
+            values = []
+            for i in range(len(Px)):
+                dst[i] = np.linalg.norm(np.array([cx - Px[i], cy - Py[i]]))
+                values.append((ang[i], dst[i], i))
+            idx = np.sort(np.array(values, dtype=dtype), order=['angle', 'distance'])
+            V_sorted = np.copy(V)
+            for i in range(len(Px)):
+                V_sorted[:, i] = V[:, idx[i][2]]
+            
+            return V_sorted
         return np.array([[]])
 
 
