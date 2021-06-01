@@ -277,7 +277,7 @@ class TorchConstrainedZonotope(object):
         if self.A.shape[0] > 0:
             cz = ConstrainedZonotope(self.c.cpu().detach().numpy(), self.G.cpu().detach().numpy(), self.A.cpu().detach().numpy(), self.b.cpu().detach().numpy())
         else:
-            cz = ConstrainedZonotope(self.c.detach().numpy(), self.G.detach().numpy())
+            cz = ConstrainedZonotope(self.c.cpu().detach().numpy(), self.G.cpu().detach().numpy())
         cz.plot(ax, color, alpha)
 
 def rownormalize(A, b):
