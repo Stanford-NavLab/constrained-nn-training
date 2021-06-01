@@ -23,7 +23,7 @@ class ConstrainedZonotope(object):
             center: np array
             generators: np array
         """
-        self.c = center 
+        self.c = center
         self.G = generators
         self.A = constraint_A
         self.b = constraint_b
@@ -63,24 +63,24 @@ class ConstrainedZonotope(object):
         # other is a scalar
         if np.isscalar(other):
             c = other * self.c
-            G = other * self.G 
+            G = other * self.G
         # other is a matrix
         elif type(other) is np.ndarray:
             c = other @ self.c
-            G = other @ self.G 
-        return ConstrainedZonotope(c,G,self.A,self.b) 
-    
+            G = other @ self.G
+        return ConstrainedZonotope(c,G,self.A,self.b)
+
     def __mul__(self, other):
         """ (Left) linear map (overloads '*') """
         # other is a scalar
         if np.isscalar(other):
             c = other * self.c
-            G = other * self.G 
+            G = other * self.G
         # other is a matrix
         elif type(other) is np.ndarray:
             c = self.c @ other
             G = self.G @ other
-        return ConstrainedZonotope(c,G,self.A,self.b) 
+        return ConstrainedZonotope(c,G,self.A,self.b)
 
     def intersect(self, other):
         """ Intersection """
@@ -91,12 +91,12 @@ class ConstrainedZonotope(object):
             A = np.hstack((self.G, -other.G))
             b = other.c - self.c
         else:
-            q1 = self.A.shape[0]; q2 = other.A.shape[0] 
+            q1 = self.A.shape[0]; q2 = other.A.shape[0]
             A = np.block([[self.A, np.zeros((q1, other.order))],
                           [np.zeros((q2, self.order)), other.A],
                           [self.G, -other.G]])
             b = np.vstack((self.b, other.b, other.c - self.c))
-        return ConstrainedZonotope(c,G,A,b) 
+        return ConstrainedZonotope(c,G,A,b)
 
     ### Properties
     def vertices(self):
@@ -148,7 +148,7 @@ class ConstrainedZonotope(object):
             V_sorted = np.copy(V)
             for i in range(len(Px)):
                 V_sorted[:, i] = V[:, idx[i][2]]
-            
+
             return V_sorted
         return np.array([[]])
 
@@ -198,17 +198,18 @@ class TorchConstrainedZonotope(object):
             center: torch tensor
             generators: torch tensor
         """
-        self.c = center 
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.c = center
         self.G = generators
         self.dim = center.shape[0]
         self.order = generators.shape[1]
         if constraint_A is None:
-            self.A = torch.zeros(0,self.order)
-            self.b = torch.zeros(0,1)
+            self.A = torch.zeros(0,self.order).to(self.device)
+            self.b = torch.zeros(0,1).to(self.device)
         else:
             self.A = constraint_A
             self.b = constraint_b
-        
+
 
     def __str__(self):
         ind = '\t'
@@ -216,7 +217,7 @@ class TorchConstrainedZonotope(object):
         G_str = ind + str(self.G.data).replace('\n','\n' + ind)
         A_str = ind + str(self.A.data).replace('\n','\n' + ind)
         b_str = ind + str(self.b.data).replace('\n','\n' + ind)
-        
+
         print_str = 'center:\n' + c_str + '\ngenerators:\n' + G_str + \
                     '\nconstraint A:\n' + A_str + '\nconstraint b:\n' + b_str
         return print_str
@@ -235,47 +236,48 @@ class TorchConstrainedZonotope(object):
         # other is a scalar
         if np.isscalar(other):
             c = other * self.c
-            G = other * self.G 
+            G = other * self.G
         # other is a matrix
         elif type(other) is torch.Tensor:
             c = other @ self.c
-            G = other @ self.G 
-        return TorchConstrainedZonotope(c,G,self.A,self.b) 
-    
+            G = other @ self.G
+        return TorchConstrainedZonotope(c,G,self.A,self.b)
+
     def __mul__(self, other):
         """ (Left) linear map (overloads '*') """
         # other is a scalar
         if np.isscalar(other):
             c = other * self.c
-            G = other * self.G 
+            G = other * self.G
         # other is a matrix
         elif type(other) is torch.Tensor:
             c = self.c @ other
             G = self.G @ other
-        return TorchConstrainedZonotope(c,G,self.A,self.b) 
+        return TorchConstrainedZonotope(c,G,self.A,self.b)
 
     def intersect(self, other):
         """ Intersection """
         c = self.c
-        G = torch.hstack((self.G, torch.zeros(self.dim, other.order)))
+        G = torch.hstack((self.G, torch.zeros(self.dim, other.order).to(self.device)))
         # no constraints case
         # if self.A is None and other.A is None:
         #     A = torch.hstack((self.G, -other.G))
         #     b = other.c - self.c
         # else:
-        q1 = self.A.shape[0]; q2 = other.A.shape[0] 
-        A1 = torch.hstack((self.A, torch.zeros(q1, other.order)))
-        A2 = torch.hstack((torch.zeros(q2, self.order), other.A))
+        q1 = self.A.shape[0]; q2 = other.A.shape[0]
+        A1 = torch.hstack((self.A, torch.zeros(q1, other.order).to(self.device)))
+        A2 = torch.hstack((torch.zeros(q2, self.order).to(self.device), other.A))
         A3 = torch.hstack((self.G, -other.G))
         A = torch.vstack((A1, A2, A3))
         b = torch.vstack((self.b, other.b, other.c - self.c))
-        return TorchConstrainedZonotope(c,G,A,b) 
+        return TorchConstrainedZonotope(c,G,A,b)
 
     def plot(self, ax=None, color='b', alpha=0.5):
         """ Plot """
         if self.A.shape[0] > 0:
-            cz = ConstrainedZonotope(self.c.detach().numpy(), self.G.detach().numpy(), self.A.detach().numpy(), self.b.detach().numpy())
+            cz = ConstrainedZonotope(self.c.cpu().detach().numpy(), self.G.cpu().detach().numpy(), self.A.cpu().detach().numpy(), self.b.cpu().detach().numpy())
         else:
+<<<<<<< Updated upstream
             cz = ConstrainedZonotope(self.c.detach().numpy(), self.G.detach().numpy())
         cz.plot(ax, color, alpha)
 
@@ -287,3 +289,7 @@ def rownormalize(A, b):
                 A[i, j] = A[i, j] / normsA[i]
             b[i, 0] = b[i, 0] / normsA[i]
     return A, b
+=======
+            cz = ConstrainedZonotope(self.c.cpu().detach().numpy(), self.G.cpu().detach().numpy())
+        cz.plot(ax, color, alpha)
+>>>>>>> Stashed changes

@@ -5,6 +5,7 @@ from util.constrained_zonotope import ConstrainedZonotope, TorchConstrainedZonot
 import cvxpy as cvx
 from scipy.optimize import linprog
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def emptiness_check(f_cost, A_ineq, b_ineq, A_eq, b_eq):
     # x_cvx = cvx.Variable((f_cost.shape[0], 1))
@@ -259,14 +260,14 @@ def hpint_perm_torch(n):
     D_new = []
     H_new = []
     for i in range(2 ** n - 1):
-        c_new_i = torch.zeros(n, 1)
+        c_new_i = torch.zeros(n, 1).to(device)
         binStr = bin(i + 1)[2:]
         for j in range(len(binStr)):
             c_new_i[n - 1 - j][0] = int(binStr[len(binStr) - 1 - j])
         c_new.append(c_new_i)
-        D_new_i = torch.diag(c_new_i.T[0])
+        D_new_i = torch.diag(c_new_i.T[0]).to(device)
         D_new.append(D_new_i)
-        H_new_i = torch.diag((c_new_i * (-2) + 1).T[0])
+        H_new_i = torch.diag((c_new_i * (-2) + 1).T[0]).to(device)
         H_new.append(H_new_i)
 
     return c_new, D_new, H_new
@@ -307,11 +308,11 @@ def ReLU_con_zono_single_torch(Z_in):
         # Get new center and generator matrices
         c_i = D_new[i] @ c
         G_i = D_new[i] @ G
-        G_i = torch.cat((G_i, torch.zeros(n, n)), dim=1)
+        G_i = torch.cat((G_i, torch.zeros(n, n).to(device)), dim=1)
 
         # Get new constraint arrays
         HG = H_new[i] @ G
-        d_i = torch.abs(HG) @ torch.ones(n_gen, 1)
+        d_i = torch.abs(HG) @ torch.ones(n_gen, 1).to(device)
         Hc = H_new[i] @ c
         d_i = 0.5 * (d_i - Hc)
 
@@ -321,10 +322,10 @@ def ReLU_con_zono_single_torch(Z_in):
 
         A_i = torch.cat((HG, torch.diag(d_i.T[0])), dim=1)
         if n_con > 0:
-            A_i = torch.cat((torch.cat((A, torch.zeros(n_con, n)), dim=1), A_i), dim=0)
+            A_i = torch.cat((torch.cat((A, torch.zeros(n_con, n).to(device)), dim=1), A_i), dim=0)
 
         # Create output zonotope
-        f_cost, A_ineq, b_ineq, A_eq, b_eq = make_con_zono_empty_check_LP(A_i.detach().numpy(), b_i.detach().numpy())
+        f_cost, A_ineq, b_ineq, A_eq, b_eq = make_con_zono_empty_check_LP(A_i.cpu().detach().numpy(), b_i.cpu().detach().numpy())
         test_value = emptiness_check(f_cost, A_ineq, b_ineq, A_eq, b_eq)
         if test_value <= 1:
             Z_out.append(TorchConstrainedZonotope(c_i, G_i, A_i, b_i))
