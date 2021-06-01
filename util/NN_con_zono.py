@@ -113,10 +113,11 @@ def ReLU_con_zono_single(Z_in):
             A_i = np.concatenate((np.concatenate((A, np.zeros((n_con, n))), axis=1), A_i), axis=0)
 
         # Create output zonotope
-        f_cost, A_ineq, b_ineq, A_eq, b_eq = make_con_zono_empty_check_LP(A_i, b_i)
-        test_value = emptiness_check(f_cost, A_ineq, b_ineq, A_eq, b_eq)
-        if test_value <= 1:
-            Z_out.append(ConstrainedZonotope(c_i, G_i, A_i, b_i))
+        # f_cost, A_ineq, b_ineq, A_eq, b_eq = make_con_zono_empty_check_LP(A_i, b_i)
+        # test_value = emptiness_check(f_cost, A_ineq, b_ineq, A_eq, b_eq)
+        # if test_value <= 1:
+        #     Z_out.append(ConstrainedZonotope(c_i, G_i, A_i, b_i))
+        Z_out.append(ConstrainedZonotope(c_i, G_i, A_i, b_i))
 
     return Z_out
 

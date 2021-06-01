@@ -129,7 +129,7 @@ class ConstrainedZonotope(object):
                 Zt = np.concatenate((Zt, np.array([vertices[i]])), axis=0)
             V = Zt @ Neq.T + x0.T
             V = c + G @ V.T
-            print(V)
+            #print(V)
 
             # Rearrange points in V in CCW order
             Px = V[0]
