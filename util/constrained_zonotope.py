@@ -115,6 +115,8 @@ class ConstrainedZonotope(object):
         n_G = G.shape[1]
         A_ineq = np.concatenate((np.eye(n_G), -np.eye(n_G)), axis=0)
         b_ineq = np.ones((2 * n_G, 1))
+        A, b = rownormalize(A, b)
+        A_ineq, b_ineq = rownormalize(A_ineq, b_ineq)
         Neq = null_space(A)
         x0 = np.linalg.pinv(A) @ b
         AAA = A_ineq @ Neq
@@ -122,14 +124,13 @@ class ConstrainedZonotope(object):
         try:
             vertices = pypoman.compute_polytope_vertices(AAA, bbb)
         except:
-            print("error plotting: ",AAA, bbb)
+            return np.array([[]])
         if len(vertices) > 0:
             Zt = np.array([vertices[0]])
             for i in range(1, len(vertices)):
                 Zt = np.concatenate((Zt, np.array([vertices[i]])), axis=0)
             V = Zt @ Neq.T + x0.T
             V = c + G @ V.T
-            #print(V)
 
             # Rearrange points in V in CCW order
             Px = V[0]
@@ -277,3 +278,12 @@ class TorchConstrainedZonotope(object):
         else:
             cz = ConstrainedZonotope(self.c.detach().numpy(), self.G.detach().numpy())
         cz.plot(ax, color, alpha)
+
+def rownormalize(A, b):
+    normsA = np.sqrt(np.sum(np.square(A), axis=1))
+    for i in range(len(normsA)):
+        if normsA[i] > 0.:
+            for j in range(A.shape[1]):
+                A[i, j] = A[i, j] / normsA[i]
+            b[i, 0] = b[i, 0] / normsA[i]
+    return A, b

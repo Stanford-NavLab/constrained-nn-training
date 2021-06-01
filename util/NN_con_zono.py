@@ -3,16 +3,19 @@ import torch
 from util.zonotope import Zonotope
 from util.constrained_zonotope import ConstrainedZonotope, TorchConstrainedZonotope
 import cvxpy as cvx
+from scipy.optimize import linprog
 
 
 def emptiness_check(f_cost, A_ineq, b_ineq, A_eq, b_eq):
-    x_cvx = cvx.Variable((f_cost.shape[0], 1))
-    cost = np.transpose(f_cost) @ x_cvx
-    constraints = [A_ineq @ x_cvx <= b_ineq, A_eq @ x_cvx == b_eq]
-    problem = cvx.Problem(cvx.Minimize(cost), constraints)
-    problem.solve()
-    x = x_cvx.value
-    return x[-1]
+    # x_cvx = cvx.Variable((f_cost.shape[0], 1))
+    # cost = np.transpose(f_cost) @ x_cvx
+    # constraints = [A_ineq @ x_cvx <= b_ineq, A_eq @ x_cvx == b_eq]
+    # problem = cvx.Problem(cvx.Minimize(cost), constraints)
+    # problem.solve()
+    # x = x_cvx.value
+    # return x[-1]
+    res = linprog(f_cost, A_ineq, b_ineq, A_eq, b_eq, (None, None))
+    return res.x[-1]
 
 
 def make_con_zono_empty_check_LP(A, b):
