@@ -1,5 +1,5 @@
-# zono-reach-net
-Neural network approach for generating zonotope reachable sets
+# constrained-nn-training
+Constrained Neural Network Training via Reachability Analysis
 
 ## Setup
 (Developed and tested on Windows with GPU support)
@@ -15,3 +15,6 @@ Neural network approach for generating zonotope reachable sets
 2. Run `code` to open VSCode 
 3. In bottom left corner of VSCode, select interpreter `'reach-net': conda`
 4. In upper right corner of VSCode, select kernel `'reach-net': conda` (May need to go to Preferences > Search "path" and select "python" and add path to anaconda envs to "Venv Path")
+
+## Usage
+Main notebook for generating results is `constrained_opt.ipynb`
