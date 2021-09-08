@@ -6,9 +6,10 @@ Constrained Neural Network Training via Reachability Analysis
 1. Make sure anaconda is setup. Open anaconda prompt
 2. Create conda environment: `conda env create -f environment.yml`
 3. Activate newly created environment: `conda activate reach-net`
-4. Install cvxpy: https://www.cvxpy.org/install/
+4. Install cvxpy: `pip install cvxpy`
 5. Install cvxpylayers: `pip install cvxpylayers`
-6. Install (latest) pytorch with CUDA support: `conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch`
+6. Install pypoman: `pip install pypoman`
+7. Install (latest) pytorch with CUDA support: `conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch`
 
 ### Jupyter notebooks in VSCode
 1. Open new anaconda prompt and activate environment
