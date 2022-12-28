@@ -1,6 +1,8 @@
 # constrained-nn-training
 Constrained Neural Network Training via Reachability Analysis
 
+Paper: https://arxiv.org/abs/2107.07696
+
 ## Setup
 (Developed and tested on Windows with GPU support)
 1. Make sure anaconda is setup. Open anaconda prompt
